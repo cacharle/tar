@@ -4,22 +4,36 @@
 # include <sys/types.h>
 # include <sys/stat.h>
 
+# ifndef S_IFMT
+#  define S_IFMT __S_IFMT
+# endif
 # ifndef S_IFDIR
 #  define S_IFDIR __S_IFDIR
 # endif
-# ifndef S_IFMT
-#  define S_IFMT __S_IFMT
+# ifndef S_IFREG
+#  define S_IFREG __S_IFREG
 # endif
 
 # include <unistd.h>
 # include <stdbool.h>
+# include <stdint.h>
 # include <getopt.h>
 # include <fcntl.h>
+# include <dirent.h>
 # include <stdio.h>
 # include <stdlib.h>
 # include <strings.h>
 # include <string.h>
 
+# include <grp.h>
+# include <pwd.h>
+
+# include <limits.h>
+# ifdef __linux__
+#  include <linux/limits.h>
+# endif
+
+# define RECORD_SIZE 512
 
 // # define FILE_NAME_MAX 100
 
@@ -44,5 +58,13 @@ typedef struct
 	char	file_name_prefix[155];
 }			t_header;
 
+// header.c
+int	record_write(int fd, char *s, size_t size);
+int	header_write(int fd, char *file_name, struct stat *statbuf);
+
+// fs.c
+int file_content_write(int fd, int file_fd, struct stat *statbuf);
+int file_write(int fd, char file_name[PATH_MAX]);
+int directory_write(int fd, char dir_name[PATH_MAX]);
 
 #endif // TAR_H
