@@ -18,8 +18,8 @@ NAME = tar
 all: prebuild $(NAME)
 
 prebuild:
-	@echo "Making dir $$subdir"; mkdir -p $(OBJDIR)
-	@for subdir in $(OBJDIRS); do echo "Making dir $$subdir"; mkdir -p $$subdir; done
+	@mkdir -vp $(OBJDIR)
+	@for subdir in $(OBJDIRS); do mkdir -vp $$subdir; done
 
 $(NAME): $(OBJ)
 	@echo "Linking: $@"
