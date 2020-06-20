@@ -1,0 +1,5 @@
+tar
+a.out
+*.o
+*.tar
+*.gz
