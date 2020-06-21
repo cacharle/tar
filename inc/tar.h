@@ -45,7 +45,7 @@ typedef struct
 	char	user_id[8];
 	char	group_id[8];
 	char	file_size[12];
-	char	last_time[12];
+	char	last_time[12];   // utime
 	char	checksum[8];
 	char	file_type[1];
 	char	link_file_name[100];
@@ -58,13 +58,25 @@ typedef struct
 	char	file_name_prefix[155];
 }			t_header;
 
-// header.c
-int	record_write(int fd, char *s, size_t size);
-int	header_write(int fd, char *file_name, struct stat *statbuf);
+typedef enum
+{
+	FLAG_CREATE = 1 << 0,
+	FLAG_VERBOSE = 1 << 0,
+	FLAG_LIST = 1 << 0,
+}			t_flags;
+
+// utils.c
+int			record_write(int fd, char *s, size_t size);
+int			record_write_blank(int fd, size_t count);
+int			header_write(int fd, char *file_name, struct stat *statbuf);
 
 // fs.c
-int file_content_write(int fd, int file_fd, struct stat *statbuf);
-int file_write(int fd, char file_name[PATH_MAX]);
-int directory_write(int fd, char dir_name[PATH_MAX]);
+int 		file_content_write(int fd, int file_fd, struct stat *statbuf);
+int 		file_write(int fd, char file_name[PATH_MAX]);
+int 		directory_write(int fd, char dir_name[PATH_MAX]);
+
+// archive.c
+int			archive_write(char *archive_file_name, char **files);
+int			archive_read(char *archive_file_name);
 
 #endif // TAR_H
