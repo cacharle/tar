@@ -79,7 +79,7 @@ int			archive_extract(int archive_fd, bool verbose)
 	return 0;
 }
 
-int			archive_list(int archive_fd, bool verbose)
+int	archive_header_iter(int archive_fd, bool verbose, int (*f)(t_header*, struct stat*, bool))
 {
 	char		record[RECORD_SIZE];
 	struct stat	statbuf;
@@ -100,11 +100,8 @@ int			archive_list(int archive_fd, bool verbose)
 		}
 		if (header_parse(record, &statbuf, &header) == -1)
 			return -1;
-		if (!verbose)
-			put_file_name(header.file_name);
-		else
-			put_file_verbose(&header, &statbuf);
-
+		if (f(&header, &statbuf, verbose) == -1)
+			return -1;
 		if (header.file_type[0] == '0' &&
 			lseek(archive_fd, statbuf.st_size + (RECORD_SIZE - statbuf.st_size % RECORD_SIZE), SEEK_CUR) == -1)
 		{
@@ -115,7 +112,47 @@ int			archive_list(int archive_fd, bool verbose)
 	return 0;
 }
 
-int	archive_get_fd(t_args *args)
+int			archive_list_func(t_header *header, struct stat *statbuf, bool verbose)
+{
+	if (!verbose)
+		put_file_name(header->file_name);
+	else
+		put_file_verbose(header, statbuf);
+	return 0;
+}
+
+int			archive_list(int archive_fd, bool verbose)
+{
+	return archive_header_iter(archive_fd, verbose, archive_list_func);
+}
+
+int			archive_diff_func(t_header *header, struct stat *statbuf, bool verbose)
+{
+	struct stat	current_statbuf;
+
+	if (verbose)
+		put_file_name(header->file_name);
+	if (stat(header->file_name, &current_statbuf) == -1)
+		return -1;
+	if (S_ISDIR(current_statbuf.st_mode))
+		return 0;
+	if (statbuf->st_uid != current_statbuf.st_uid)
+		printf("%s: Uid differs\n", header->file_name);
+	if (statbuf->st_gid != current_statbuf.st_gid)
+		printf("%s: Gid differs\n", header->file_name);
+	if (statbuf->st_mtime != current_statbuf.st_mtime)
+		printf("%s: Mod time differs\n", header->file_name);
+	if (statbuf->st_size != current_statbuf.st_size)
+		printf("%s: Size differs\n", header->file_name);
+	return 0;
+}
+
+int			archive_diff(int archive_fd, bool verbose)
+{
+	return archive_header_iter(archive_fd, verbose, archive_diff_func);
+}
+
+int			archive_get_fd(t_args *args)
 {
 	int		fd;
 	bool	is_read;
@@ -137,7 +174,7 @@ int	archive_get_fd(t_args *args)
 	return fd;
 }
 
-int	archive_dispatch_action(int archive_fd, t_args *args)
+int			archive_dispatch_action(int archive_fd, t_args *args)
 {
 	bool	verbose = args->flags & FLAG_VERBOSE;
 
@@ -149,6 +186,8 @@ int	archive_dispatch_action(int archive_fd, t_args *args)
 			return archive_extract(archive_fd, verbose);
 		case ACTION_LIST:
 			return archive_list(archive_fd, verbose);
+		case ACTION_DIFF:
+			return archive_diff(archive_fd, verbose);
 		default:
 			return -1;
 	}
