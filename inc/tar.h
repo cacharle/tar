@@ -35,6 +35,8 @@
 
 # define RECORD_SIZE 512
 
+# define DEFAULT_UMASK 0644
+
 // # define FILE_NAME_MAX 100
 
 // https://en.wikipedia.org/wiki/Tar_(computing)?oldformat=true#Header
@@ -56,14 +58,32 @@ typedef struct
 	char	device_major_number[8];
 	char	device_minor_number[8];
 	char	file_name_prefix[155];
-}			t_header;
+}				t_header;
 
 typedef enum
 {
-	FLAG_CREATE = 1 << 0,
+	ACTION_CONCAT,
+	ACTION_CREATE,
+	ACTION_DIFF,
+	ACTION_LIST,
+	ACTION_APPEND,
+	ACTION_UPDATE,
+	ACTION_EXTRACT,
+}				t_action;
+
+typedef enum
+{
 	FLAG_VERBOSE = 1 << 0,
-	FLAG_LIST = 1 << 0,
-}			t_flags;
+	FLAG_FILE    = 1 << 1,
+}				t_flags;
+
+typedef struct
+{
+	char		*archive_name;
+	char		**files;
+	t_action	action;
+	t_flags		flags;
+}				t_args;
 
 // header.c
 int			header_write(int fd, char *file_name, struct stat *statbuf);
@@ -75,13 +95,18 @@ int 		file_write(int fd, char file_name[PATH_MAX]);
 int 		directory_write(int fd, char dir_name[PATH_MAX]);
 
 // archive.c
-int			archive_write(char *archive_file_name, char **files);
-int			archive_read(char *archive_file_name);
+int			archive_dispatch_action(int archive_fd, t_args *args);
+int			archive_create(int archive_fd, char **files);
+int			archive_extract(int archive_fd);
+int			archive_get_fd(t_args *args);
 
 // record.c
 int			record_write(int fd, char *s, size_t size);
 int			record_write_blank(int fd, size_t count);
 int			record_read(int fd, char record[RECORD_SIZE]);
 bool		record_is_blank(char record[RECORD_SIZE]);
+
+// args.c
+bool		args_parse(int argc, char **argv, t_args *args);
 
 #endif // TAR_H

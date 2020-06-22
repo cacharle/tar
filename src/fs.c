@@ -28,7 +28,7 @@ int file_write(int fd, char file_name[PATH_MAX])
 	int			file_fd;
 	struct stat	statbuf;
 
-	fprintf(stderr, "|%s|\n", file_name);
+	/* fprintf(stderr, "|%s|\n", file_name); */
 	if (stat(file_name, &statbuf) == -1)
 	{
 		perror("file_write stat");
