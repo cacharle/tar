@@ -1,44 +1,5 @@
 #include "tar.h"
 
-int	record_write(int fd, char *s, size_t size)
-{
-	char buf[RECORD_SIZE];
-
-	while (size > RECORD_SIZE)
-	{
-		memcpy(buf, s, RECORD_SIZE);
-		s += RECORD_SIZE;
-		size -= RECORD_SIZE;
-		if (write(fd, buf, RECORD_SIZE) == -1)
-		{
-			perror(NULL);
-			return -1;
-		}
-	}
-	bzero(buf, RECORD_SIZE);
-	memcpy(buf, s, size);
-	if (write(fd, buf, RECORD_SIZE) == -1)
-	{
-		perror(NULL);
-		return -1;
-	}
-	return (0);
-}
-
-int	record_write_blank(int fd, size_t count)
-{
-	char buf[RECORD_SIZE] = {0};
-	while (count-- > 0)
-	{
-		if (write(fd, buf, RECORD_SIZE) == -1)
-		{
-			perror(NULL);
-			return -1;
-		}
-	}
-	return 0;
-}
-
 int	header_write(int fd, char *file_name, struct stat *statbuf)
 {
 	t_header		header;
@@ -97,22 +58,26 @@ int	header_write(int fd, char *file_name, struct stat *statbuf)
 	return record_write(fd, (char*)&header, sizeof(t_header));
 }
 
-int header_parse(char record[RECORD_SIZE])
+int header_parse(char record[RECORD_SIZE], struct stat *statbuf, t_header *header)
 {
-	t_header	header;
-	mode_t		mode;
-	gid_t		gid;
-	uid_t		uid;
+	unsigned int	actual_checksum;
+	unsigned int	expected_checksum;
 
-	memcpy(&header, record, sizeof(t_header));
-	/* sscanf(header.file_mode, "% */
+	memcpy(header, record, sizeof(t_header));
 
-	/* sscanf(header.file_mode, "%07o", statbuf->st_mode); */
-	/* sscanf(header.user_id,   "%07o", statbuf->st_uid); */
-	/* sscanf(header.group_id,  "%07o", statbuf->st_gid); */
-    /*  */
-	/* sscanf(header.file_size, "%011lo", statbuf->st_size); */
-    /*  */
-	/* sscanf(header.last_time, "%011lo", statbuf->st_mtime); */
+	actual_checksum = -1;
+	sscanf(header->checksum, "%06o", &actual_checksum);
+	memset(header->checksum, ' ', 8);
+	expected_checksum = 0;
+	for (size_t i = 0; i < sizeof(t_header); i++)
+		expected_checksum += ((uint8_t*)header)[i];
+	if (actual_checksum != expected_checksum)
+		return -1;
+
+	sscanf(header->file_mode, "%07o", &statbuf->st_mode);
+	sscanf(header->user_id,   "%07o", &statbuf->st_uid);
+	sscanf(header->group_id,  "%07o", &statbuf->st_gid);
+	sscanf(header->file_size, "%011lo", (long unsigned int*)&statbuf->st_size);
+	sscanf(header->last_time, "%011lo", (long unsigned int*)&statbuf->st_mtime);
 	return 0;
 }

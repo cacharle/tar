@@ -41,33 +41,71 @@ int	archive_write(char *archive_file_name, char **files)
 
 int			archive_read(char *archive_file_name)
 {
-	int	fd;
+	int	archive_fd;
 
-	if ((fd = open(archive_file_name, O_RDONLY)) == -1)
+	if (archive_file_name == NULL)
+		archive_fd = STDIN_FILENO;
+	else
 	{
-		perror("achive_write");
-		return -1;
+		if ((archive_fd = open(archive_file_name, O_RDONLY)) == -1)
+		{
+			perror("achive_write");
+			return -1;
+		}
 	}
 
-	int			ret;
-	char		buf[RECORD_SIZE];
+	char		record[RECORD_SIZE];
 	t_header	header;
-	int			current_fd;
+	int			fd;
+	struct stat	statbuf;
 
-	while ((ret = read(fd, buf, RECORD_SIZE)) == RECORD_SIZE)
+	while (true)
 	{
-		/* header_parse(&header, buf); */
-		/* current_fd = open(header.file_name, O_WRONLY | O_CREAT | O_TRUNC, header. */
-		// read content
-		// TODO
+		if (record_read(archive_fd, record) == -1)
+			return -1;
+		if (record_is_blank(record))
+		{
+			if (record_read(archive_fd, record) == -1)
+				return -1;
+			if (record_is_blank(record))
+				break;
+			else
+				return -1;
+		}
+		if (header_parse(record, &statbuf, &header) == -1)
+			return -1;
+
+		switch (header.file_type[0])
+		{
+			case '5':
+				if (mkdir(header.file_name, statbuf.st_mode) == -1)
+				{
+					close(archive_fd);
+					perror(NULL);
+					return -1;
+				}
+				break;
+			case '0':
+				fd = open(header.file_name, O_WRONLY | O_CREAT | O_TRUNC, statbuf.st_mode);
+				if (fd == -1)
+				{
+					perror(NULL);
+					return -1;
+				}
+				char *content = malloc(statbuf.st_size);
+				if (content == NULL ||
+					read(archive_fd, content, statbuf.st_size) == -1 ||
+					lseek(archive_fd, RECORD_SIZE - statbuf.st_size % RECORD_SIZE, SEEK_CUR) == -1 ||
+					write(fd, content, statbuf.st_size) == -1)
+				{
+					perror(NULL);
+					return -1;
+				}
+				break;
+			default:
+				return -1;
+		}
 	}
-	if (ret == -1)
-	{
-		perror(NULL);
-		return -1;
-	}
-	if (ret < RECORD_SIZE)
-		return -1;
-	close(fd);
+	close(archive_fd);
 	return 0;
 }

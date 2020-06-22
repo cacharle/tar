@@ -65,10 +65,9 @@ typedef enum
 	FLAG_LIST = 1 << 0,
 }			t_flags;
 
-// utils.c
-int			record_write(int fd, char *s, size_t size);
-int			record_write_blank(int fd, size_t count);
+// header.c
 int			header_write(int fd, char *file_name, struct stat *statbuf);
+int			header_parse(char record[RECORD_SIZE], struct stat *statbuf, t_header *header);
 
 // fs.c
 int 		file_content_write(int fd, int file_fd, struct stat *statbuf);
@@ -78,5 +77,11 @@ int 		directory_write(int fd, char dir_name[PATH_MAX]);
 // archive.c
 int			archive_write(char *archive_file_name, char **files);
 int			archive_read(char *archive_file_name);
+
+// record.c
+int			record_write(int fd, char *s, size_t size);
+int			record_write_blank(int fd, size_t count);
+int			record_read(int fd, char record[RECORD_SIZE]);
+bool		record_is_blank(char record[RECORD_SIZE]);
 
 #endif // TAR_H

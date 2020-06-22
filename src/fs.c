@@ -83,3 +83,5 @@ int directory_write(int fd, char dir_name[PATH_MAX])
 	closedir(dir);
 	return 0;
 }
+
+/* int	file_content_read(int archive_fd,  */
