@@ -1,6 +1,6 @@
 #include "tar.h"
 
-int	archive_create(int archive_fd, char **files)
+int	archive_create(int archive_fd, char **files, bool verbose)
 {
 	char		file_name[PATH_MAX];
 	struct stat	root_statbuf;
@@ -9,7 +9,7 @@ int	archive_create(int archive_fd, char **files)
 	{
 		bzero(file_name, PATH_MAX);
 		strcpy(file_name, *files);
-		file_write(archive_fd, file_name);
+		file_write(archive_fd, file_name, verbose);
 	}
 	if (stat("/", &root_statbuf) == -1)
 	{
@@ -21,7 +21,7 @@ int	archive_create(int archive_fd, char **files)
 	return 0;
 }
 
-int			archive_extract(int archive_fd)
+int			archive_extract(int archive_fd, bool verbose)
 {
 	char		record[RECORD_SIZE];
 	t_header	header;
@@ -44,6 +44,8 @@ int			archive_extract(int archive_fd)
 		if (header_parse(record, &statbuf, &header) == -1)
 			return -1;
 
+		if (verbose)
+			put_file_name(header.file_name);
 		switch (header.file_type[0])
 		{
 			case '5':
@@ -77,6 +79,42 @@ int			archive_extract(int archive_fd)
 	return 0;
 }
 
+int			archive_list(int archive_fd, bool verbose)
+{
+	char		record[RECORD_SIZE];
+	struct stat	statbuf;
+	t_header	header;
+
+	while (true)
+	{
+		if (record_read(archive_fd, record) == -1)
+			return -1;
+		if (record_is_blank(record))
+		{
+			if (record_read(archive_fd, record) == -1)
+				return -1;
+			if (record_is_blank(record))
+				break;
+			else
+				return -1;
+		}
+		if (header_parse(record, &statbuf, &header) == -1)
+			return -1;
+		if (!verbose)
+			put_file_name(header.file_name);
+		else
+			put_file_verbose(&header, &statbuf);
+
+		if (header.file_type[0] == '0' &&
+			lseek(archive_fd, statbuf.st_size + (RECORD_SIZE - statbuf.st_size % RECORD_SIZE), SEEK_CUR) == -1)
+		{
+			perror(NULL);
+			return -1;
+		}
+	}
+	return 0;
+}
+
 int	archive_get_fd(t_args *args)
 {
 	int		fd;
@@ -101,12 +139,16 @@ int	archive_get_fd(t_args *args)
 
 int	archive_dispatch_action(int archive_fd, t_args *args)
 {
+	bool	verbose = args->flags & FLAG_VERBOSE;
+
 	switch (args->action)
 	{
 		case ACTION_CREATE:
-			return archive_create(archive_fd, args->files);
+			return archive_create(archive_fd, args->files, verbose);
 		case ACTION_EXTRACT:
-			return archive_extract(archive_fd);
+			return archive_extract(archive_fd, verbose);
+		case ACTION_LIST:
+			return archive_list(archive_fd, verbose);
 		default:
 			return -1;
 	}

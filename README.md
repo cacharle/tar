@@ -6,8 +6,8 @@ Shitty clone of the `tar` program made for educational purposes.
 
 - [x] `x` Extracting archive
 - [ ] `d` Difference between file system and archive
-- [ ] `t` List archive
-- [ ] `v` Verbose mode
+- [x] `t` List archive
+- [x] `v` Verbose mode
 - [ ] `A` Concatenate 2 archives together
 - [ ] `r` Add files to archive
 - [ ] `u` Update file in archive

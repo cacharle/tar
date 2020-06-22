@@ -23,12 +23,13 @@ int file_content_write(int fd, int file_fd, struct stat *statbuf)
 	return (ret);
 }
 
-int file_write(int fd, char file_name[PATH_MAX])
+int file_write(int fd, char file_name[PATH_MAX], bool verbose)
 {
 	int			file_fd;
 	struct stat	statbuf;
 
-	/* fprintf(stderr, "|%s|\n", file_name); */
+	if (verbose)
+		put_file_name(file_name);
 	if (stat(file_name, &statbuf) == -1)
 	{
 		perror("file_write stat");
@@ -40,7 +41,7 @@ int file_write(int fd, char file_name[PATH_MAX])
 	switch (statbuf.st_mode & S_IFMT)
 	{
 		case S_IFDIR:
-			return directory_write(fd, file_name);
+			return directory_write(fd, file_name, verbose);
 		default:
 			if ((file_fd = open(file_name, O_RDONLY)) == -1)
 			{
@@ -52,7 +53,7 @@ int file_write(int fd, char file_name[PATH_MAX])
 	return (0);
 }
 
-int directory_write(int fd, char dir_name[PATH_MAX])
+int directory_write(int fd, char dir_name[PATH_MAX], bool verbose)
 {
 	DIR				*dir;
 	struct dirent	*entry;
@@ -72,7 +73,7 @@ int directory_write(int fd, char dir_name[PATH_MAX])
 			strcmp(entry->d_name, "..") == 0)
 			continue;
 		strcat(dir_name, entry->d_name);
-		if (file_write(fd, dir_name) == -1)
+		if (file_write(fd, dir_name, verbose) == -1)
 		{
 			closedir(dir);
 			return -1;

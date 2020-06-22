@@ -27,6 +27,7 @@
 
 # include <grp.h>
 # include <pwd.h>
+# include <time.h>
 
 # include <limits.h>
 # ifdef __linux__
@@ -91,13 +92,13 @@ int			header_parse(char record[RECORD_SIZE], struct stat *statbuf, t_header *hea
 
 // fs.c
 int 		file_content_write(int fd, int file_fd, struct stat *statbuf);
-int 		file_write(int fd, char file_name[PATH_MAX]);
-int 		directory_write(int fd, char dir_name[PATH_MAX]);
+int 		file_write(int fd, char file_name[PATH_MAX], bool verbose);
+int 		directory_write(int fd, char dir_name[PATH_MAX], bool verbose);
 
 // archive.c
 int			archive_dispatch_action(int archive_fd, t_args *args);
-int			archive_create(int archive_fd, char **files);
-int			archive_extract(int archive_fd);
+int			archive_create(int archive_fd, char **files, bool verbose);
+int			archive_extract(int archive_fd, bool verbose);
 int			archive_get_fd(t_args *args);
 
 // record.c
@@ -108,5 +109,9 @@ bool		record_is_blank(char record[RECORD_SIZE]);
 
 // args.c
 bool		args_parse(int argc, char **argv, t_args *args);
+
+// utils.c
+void		put_file_name(char *file_name);
+void		put_file_verbose(t_header *header, struct stat *statbuf);
 
 #endif // TAR_H

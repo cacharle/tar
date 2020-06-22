@@ -5,6 +5,7 @@ bool	args_parse(int argc, char **argv, t_args *args)
 	int		opt;
 	int		action_counter = 0;
 
+	args->flags = 0;
 	args->archive_name = NULL;
 	args->files = NULL;
 	while ((opt = getopt(argc, argv, "Acdtruxvf:")) != -1)
